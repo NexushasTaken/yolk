@@ -91,6 +91,17 @@ enum Command {
         canonical: bool,
     },
 
+    /// Unsync (undeploy) eggs to match configuration or explicitly remove deployments.
+    ///
+    /// Provide an egg name to unsync a specific egg, or use `--all` to unsync all eggs.
+    Unsync {
+        /// Sync to canonical state. This should only be necessary for debugging purposes.
+        #[arg(long)]
+        canonical: bool,
+        /// Unsync a specific egg by name
+        egg: Option<String>,
+    },
+
     /// Evaluate a given templated file, or read a templated string from stdin.
     #[clap(name = "eval-template")]
     EvalTemplate {
@@ -269,6 +280,20 @@ fn run_command(args: Args) -> Result<()> {
                 true,
             )?
         }
+        Command::Unsync { canonical, egg } => {
+            // Lets always ensure that the yolk dir is in a properly set up state.
+            // This should later be replaced with some sort of version-aware compatibility check.
+            yolk.init_git_config(None)?;
+
+            yolk.unsync_to_mode(
+                match *canonical {
+                    true => EvalMode::Canonical,
+                    false => EvalMode::Local,
+                },
+                egg,
+            )?
+        }
+
         Command::Eval { expr, canonical } => {
             let mut eval_ctx = yolk.prepare_eval_ctx_for_templates(match *canonical {
                 true => EvalMode::Canonical,

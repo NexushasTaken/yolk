@@ -311,6 +311,47 @@ impl Yolk {
         }
     }
 
+    pub fn unsync_to_mode(&self, mode: EvalMode, egg: &Option<String>) -> Result<(), MultiError> {
+        if let Some(egg_name) = egg {
+            tracing::debug!("Unsyncing {egg_name} egg to {mode:?}");
+        } else {
+            tracing::debug!("Unsyncing eggs to {mode:?}");
+        }
+
+        let mut eval_ctx = self.prepare_eval_ctx_for_templates(mode)?;
+
+        let mut errs = Vec::new();
+        let mut egg_configs = self.load_egg_configs(&mut eval_ctx)?;
+
+        if let Some(name) = egg {
+            let cfg = egg_configs
+                .remove(name)
+                .ok_or_else(|| miette!("No egg with name {name}"))?;
+            let egg = self.yolk_paths.get_egg(&name, cfg.with_enabled(false))?;
+            if let Err(e) = self
+                .sync_egg_deployment(&egg)
+                .wrap_err_with(|| format!("Failed to unsync egg `{name}`"))
+            {
+                errs.push(e);
+            }
+        } else {
+            for (name, cfg) in egg_configs.into_iter() {
+                let egg = self.yolk_paths.get_egg(&name, cfg.with_enabled(false))?;
+                if let Err(e) = self
+                    .sync_egg_deployment(&egg)
+                    .wrap_err_with(|| format!("Failed to unsync egg `{name}`"))
+                {
+                    errs.push(e);
+                }
+            }
+        }
+        if errs.is_empty() {
+            Ok(())
+        } else {
+            Err(MultiError::new("Failed to sync some eggs", errs))
+        }
+    }
+
     #[tracing::instrument(skip_all, fields(%name, %sync_deployment, ?egg_config))]
     fn sync_egg_to_mode(
         &self,
