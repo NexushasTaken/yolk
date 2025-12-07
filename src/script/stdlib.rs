@@ -95,41 +95,41 @@ pub fn utils_module() -> Module {
         .in_global_namespace()
         .set_into_module(&mut module, regex_captures);
 
-    let rhai_color_hex_to_rgb = |hex_string: String| -> Result<Map, Box<EvalAltResult>> {
-        let (r, g, b, a) = color_hex_to_rgb(&hex_string)?;
+    let rhai_color_from_hex = |hex_string: String| -> Result<Map, Box<EvalAltResult>> {
+        let (r, g, b, a_opt) = color_hex_to_rgba(&hex_string)?;
         let mut map = Map::new();
         map.insert("r".to_string().into(), Dynamic::from_int(r as i64));
         map.insert("g".to_string().into(), Dynamic::from_int(g as i64));
         map.insert("b".to_string().into(), Dynamic::from_int(b as i64));
-        map.insert("a".to_string().into(), Dynamic::from_int(a as i64));
+        if let Some(a) = a_opt {
+            map.insert("a".to_string().into(), Dynamic::from_int(a as i64));
+        }
         Ok(map)
     };
-    FuncRegistration::new("color_hex_to_rgb")
-        .with_comments(["/// Convert a hex color string to an RGB map."])
+    FuncRegistration::new("color_hex_to_color")
+        .with_comments(["/// Convert a hex color string to an RGB or RGBA map."])
         .with_params_info(["hex_string: &str", "Result<Map>"])
         .in_global_namespace()
-        .set_into_module(&mut module, rhai_color_hex_to_rgb);
+        .set_into_module(&mut module, rhai_color_from_hex);
 
-    FuncRegistration::new("color_hex_to_rgb")
-        .with_comments(["/// Convert a hex color string to an RGB map."])
-        .with_params_info(["hex_string: &str", "Result<Map>"])
-        .in_global_namespace()
-        .set_into_module(&mut module, rhai_color_hex_to_rgb);
-
-    let color_hex_to_rgb_str = |hex_string: String| -> Result<String, Box<EvalAltResult>> {
-        let (r, g, b, _) = color_hex_to_rgb(&hex_string)?;
+    let color_hex_to_rgba_str = |hex_string: String| -> Result<String, Box<EvalAltResult>> {
+        let (r, g, b, _) = color_hex_to_rgba(&hex_string)?;
         Ok(format!("rgb({r}, {g}, {b})"))
     };
 
-    FuncRegistration::new("color_hex_to_rgb_str")
+    FuncRegistration::new("color_hex_to_rgba_str")
         .with_comments(["/// Convert a hex color string to an RGB string."])
         .with_params_info(["hex_string: &str", "Result<String>"])
         .in_global_namespace()
-        .set_into_module(&mut module, color_hex_to_rgb_str);
+        .set_into_module(&mut module, color_hex_to_rgba_str);
 
     let color_hex_to_rgba_str = |hex_string: String| -> Result<String, Box<EvalAltResult>> {
-        let (r, g, b, a) = color_hex_to_rgb(&hex_string)?;
-        Ok(format!("rgba({r}, {g}, {b}, {a})"))
+        let (r, g, b, a_opt) = color_hex_to_rgba(&hex_string)?;
+        if let Some(a) = a_opt {
+            Ok(format!("rgba({r}, {g}, {b}, {a})"))
+        } else {
+            Ok(format!("rgb({r}, {g}, {b})"))
+        }
     };
     FuncRegistration::new("color_hex_to_rgba_str")
         .with_comments(["/// Convert a hex color string to an RGBA string."])
@@ -137,7 +137,7 @@ pub fn utils_module() -> Module {
         .in_global_namespace()
         .set_into_module(&mut module, color_hex_to_rgba_str);
 
-    let color_rgb_to_hex = |rgb_table: Map| -> Result<String, Box<EvalAltResult>> {
+    let color_map_to_hex = |rgb_table: Map| -> Result<String, Box<EvalAltResult>> {
         let r = rgb_table
             .get("r")
             .map(dynamic_to_u8)
@@ -159,11 +159,11 @@ pub fn utils_module() -> Module {
             None => Ok(format!("#{:02x}{:02x}{:02x}", r, g, b)),
         }
     };
-    FuncRegistration::new("color_rgb_to_hex")
-        .with_comments(["/// Convert an RGB map to a hex color string."])
+    FuncRegistration::new("color_map_to_hex")
+        .with_comments(["/// Convert an RGB or RGBA map to a hex color string."])
         .with_params_info(["rgb_table: Map", "Result<String>"])
         .in_global_namespace()
-        .set_into_module(&mut module, color_rgb_to_hex);
+        .set_into_module(&mut module, color_map_to_hex);
 
     module
 }
@@ -511,7 +511,7 @@ fn dynamic_to_u8(x: &Dynamic) -> RhaiFnResult<u8> {
     Ok(int)
 }
 
-fn color_hex_to_rgb(hex_string: &str) -> Result<(u8, u8, u8, u8), Box<EvalAltResult>> {
+fn color_hex_to_rgba(hex_string: &str) -> Result<(u8, u8, u8, Option<u8>), Box<EvalAltResult>> {
     let hex = hex_string.trim_start_matches('#');
     if hex.len() != 6 && hex.len() != 8 {
         return Err(format!("Invalid hex color: {}", hex_string).into());
@@ -519,12 +519,12 @@ fn color_hex_to_rgb(hex_string: &str) -> Result<(u8, u8, u8, u8), Box<EvalAltRes
     let r = u8::from_str_radix(&hex[0..2], 16).map_err(|e| e.to_string())?;
     let g = u8::from_str_radix(&hex[2..4], 16).map_err(|e| e.to_string())?;
     let b = u8::from_str_radix(&hex[4..6], 16).map_err(|e| e.to_string())?;
-    let a = if hex.len() == 8 {
-        u8::from_str_radix(&hex[6..8], 16).map_err(|e| e.to_string())?
+    let a_opt = if hex.len() == 8 {
+        Some(u8::from_str_radix(&hex[6..8], 16).map_err(|e| e.to_string())?)
     } else {
-        255
+        None
     };
-    Ok((r, g, b, a))
+    Ok((r, g, b, a_opt))
 }
 
 type RhaiFnResult<T> = Result<T, Box<EvalAltResult>>;
@@ -695,6 +695,28 @@ mod test {
         } else {
             assert_eq!(expected, run_tag_expr(input, expr)?);
         }
+        Ok(())
+    }
+
+    #[rstest]
+    #[case::rgb_str("rgb(255, 0, 0)", "color_hex_to_rgba_str(`#ff0000`)" )]
+    #[case::rgba_str("rgba(255, 0, 0, 128)", "color_hex_to_rgba_str(`#ff000080`)" )]
+    pub fn test_color_hex_to_strings(
+        #[case] expected: &str,
+        #[case] expr: &str,
+    ) -> TestResult {
+        assert_eq!(expected, run_expr::<String>(expr)?);
+        Ok(())
+    }
+
+    #[rstest]
+    #[case::no_alpha("#ff0000", "color_map_to_hex(#{r:255, g:0, b:0})")]
+    #[case::with_alpha("#ff000080", "color_map_to_hex(#{r:255, g:0, b:0, a:128})")]
+    pub fn test_color_map_to_hex(
+        #[case] expected: &str,
+        #[case] expr: &str,
+    ) -> TestResult {
+        assert_eq!(expected, run_expr::<String>(expr)?);
         Ok(())
     }
 }
