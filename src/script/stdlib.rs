@@ -96,7 +96,7 @@ pub fn utils_module() -> Module {
         .in_global_namespace()
         .set_into_module(&mut module, regex_captures);
 
-    let rhai_color_from_hex = |hex_string: String| -> Result<Map, Box<EvalAltResult>> {
+    let rhai_rgba_from_hex = |hex_string: String| -> Result<Map, Box<EvalAltResult>> {
         let (r, g, b, a_opt) = color_hex_to_rgba(&hex_string)?;
         let mut map = Map::new();
         map.insert("r".to_string().into(), Dynamic::from_int(r as i64));
@@ -107,11 +107,11 @@ pub fn utils_module() -> Module {
         }
         Ok(map)
     };
-    FuncRegistration::new("color_hex_to_color")
+    FuncRegistration::new("color_hex_to_rgba")
         .with_comments(["/// Convert a hex color string to an RGB or RGBA map."])
         .with_params_info(["hex_string: &str", "Result<Map>"])
         .in_global_namespace()
-        .set_into_module(&mut module, rhai_color_from_hex);
+        .set_into_module(&mut module, rhai_rgba_from_hex);
 
     let color_hex_to_rgba_str = |hex_string: String| -> Result<String, Box<EvalAltResult>> {
         let (r, g, b, _) = color_hex_to_rgba(&hex_string)?;
