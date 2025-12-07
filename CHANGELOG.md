@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.7](https://github.com/NexushasTaken/yolk/compare/v0.3.6...v0.3.7) - 2025-12-07
+
+### Added
+
+- add hsl <-> rgb conversions
+- better support for RGBA in stdlib color helpers and add tests
+- Add yolk unsync subcommand
+
+### Docs
+
+- regenerate docs
+
+### Refactor
+
+- rename color_hex_to_color to color_hex_to_rgba
+
+### Test
+
+- add tests for hsl_to_rgb and rgb_to_hsl
+
 ## [0.3.6](https://github.com/elkowar/yolk/compare/v0.3.5...v0.3.6) - 2025-11-12
 
 ### Ci
