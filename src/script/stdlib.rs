@@ -4,6 +4,7 @@ use rhai::{FuncRegistration, Module};
 use std::path::PathBuf;
 
 use regex::Regex;
+use colorsys::{Rgb, Hsl};
 
 use crate::yolk::EvalMode;
 
@@ -164,6 +165,78 @@ pub fn utils_module() -> Module {
         .with_params_info(["rgb_table: Map", "Result<String>"])
         .in_global_namespace()
         .set_into_module(&mut module, color_map_to_hex);
+
+    let rgb_to_hsl = |rgb_map: Map| -> Result<Map, Box<EvalAltResult>> {
+        let r = rgb_map
+            .get("r")
+            .map(dynamic_to_u8)
+            .transpose()?
+            .unwrap_or(0);
+        let g = rgb_map
+            .get("g")
+            .map(dynamic_to_u8)
+            .transpose()?
+            .unwrap_or(0);
+        let b = rgb_map
+            .get("b")
+            .map(dynamic_to_u8)
+            .transpose()?
+            .unwrap_or(0);
+        let a = rgb_map.get("a").map(dynamic_to_u8).transpose()?;
+
+        let rgb = Rgb::from((r as f64, g as f64, b as f64));
+        let hsl = Hsl::from(rgb);
+
+        let mut result = Map::new();
+        result.insert("h".to_string().into(), Dynamic::from_float(hsl.hue()));
+        result.insert("s".to_string().into(), Dynamic::from_float(hsl.saturation()));
+        result.insert("l".to_string().into(), Dynamic::from_float(hsl.lightness()));
+        if let Some(alpha) = a {
+            result.insert("a".to_string().into(), Dynamic::from_int(alpha as i64));
+        }
+        Ok(result)
+    };
+    FuncRegistration::new("rgb_to_hsl")
+        .with_comments(["/// Convert an RGB or RGBA map to an HSL or HSLA map."])
+        .with_params_info(["rgb_map: Map", "Result<Map>"])
+        .in_global_namespace()
+        .set_into_module(&mut module, rgb_to_hsl);
+
+    let hsl_to_rgb = |hsl_map: Map| -> Result<Map, Box<EvalAltResult>> {
+        let h = hsl_map
+            .get("h")
+            .map(dynamic_to_f64)
+            .transpose()?
+            .unwrap_or(0.0);
+        let s = hsl_map
+            .get("s")
+            .map(dynamic_to_f64)
+            .transpose()?
+            .unwrap_or(0.0);
+        let l = hsl_map
+            .get("l")
+            .map(dynamic_to_f64)
+            .transpose()?
+            .unwrap_or(0.0);
+        let a = hsl_map.get("a").map(dynamic_to_u8).transpose()?;
+
+        let hsl = Hsl::from((h, s, l));
+        let rgb: Rgb = Rgb::from(hsl);
+
+        let mut result = Map::new();
+        result.insert("r".to_string().into(), Dynamic::from_int(rgb.red() as i64));
+        result.insert("g".to_string().into(), Dynamic::from_int(rgb.green() as i64));
+        result.insert("b".to_string().into(), Dynamic::from_int(rgb.blue() as i64));
+        if let Some(alpha) = a {
+            result.insert("a".to_string().into(), Dynamic::from_int(alpha as i64));
+        }
+        Ok(result)
+    };
+    FuncRegistration::new("hsl_to_rgb")
+        .with_comments(["/// Convert an HSL or HSLA map to an RGB or RGBA map."])
+        .with_params_info(["hsl_map: Map", "Result<Map>"])
+        .in_global_namespace()
+        .set_into_module(&mut module, hsl_to_rgb);
 
     module
 }
@@ -509,6 +582,16 @@ fn dynamic_to_u8(x: &Dynamic) -> RhaiFnResult<u8> {
         .try_into()
         .map_err(|_| format!("Failed to convert {int} to u8"))?;
     Ok(int)
+}
+
+fn dynamic_to_f64(x: &Dynamic) -> RhaiFnResult<f64> {
+    if let Ok(i) = x.as_int() {
+        Ok(i as f64)
+    } else if let Ok(f) = x.as_float() {
+        Ok(f)
+    } else {
+        Err(format!("Failed to convert {} to f64", x.type_name()).into())
+    }
 }
 
 fn color_hex_to_rgba(hex_string: &str) -> Result<(u8, u8, u8, Option<u8>), Box<EvalAltResult>> {
