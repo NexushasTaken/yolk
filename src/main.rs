@@ -24,6 +24,9 @@ use yolk::{
     yolk_paths,
 };
 
+#[cfg(feature = "docgen")]
+use yolk::doc_generator;
+
 #[derive(clap::Parser, Debug)]
 #[command(version, about)]
 struct Args {
