@@ -4,7 +4,7 @@ use rhai::{FuncRegistration, Module};
 use std::path::PathBuf;
 
 use regex::Regex;
-use colorsys::{Rgb, Hsl};
+use colorsys::{Hsl, Rgb};
 
 use crate::yolk::EvalMode;
 
@@ -138,7 +138,7 @@ pub fn utils_module() -> Module {
         .in_global_namespace()
         .set_into_module(&mut module, color_hex_to_rgba_str);
 
-    let color_map_to_hex = |rgb_table: Map| -> Result<String, Box<EvalAltResult>> {
+    let color_rgba_to_hex = |rgb_table: Map| -> Result<String, Box<EvalAltResult>> {
         let r = rgb_table
             .get("r")
             .map(dynamic_to_u8)
@@ -156,15 +156,19 @@ pub fn utils_module() -> Module {
             .unwrap_or(0);
         let a = rgb_table.get("a").map(dynamic_to_u8).transpose()?;
         match a {
-            Some(a) => Ok(format!("#{:02x}{:02x}{:02x}{:02x}", r, g, b, a)),
-            None => Ok(format!("#{:02x}{:02x}{:02x}", r, g, b)),
+            Some(a) => {
+              Ok(Rgb::from((r as f64, g as f64, b as f64, a as f64 / 255.0)).to_hexa_string())
+            },
+            None => {
+              Ok(Rgb::from((r as f64, g as f64, b as f64)).to_hex_string())
+            }
         }
     };
-    FuncRegistration::new("color_map_to_hex")
+    FuncRegistration::new("color_rgba_to_hex")
         .with_comments(["/// Convert an RGB or RGBA map to a hex color string."])
         .with_params_info(["rgb_table: Map", "Result<String>"])
         .in_global_namespace()
-        .set_into_module(&mut module, color_map_to_hex);
+        .set_into_module(&mut module, color_rgba_to_hex);
 
     let rgb_to_hsl = |rgb_map: Map| -> Result<Map, Box<EvalAltResult>> {
         let r = rgb_map
@@ -793,12 +797,47 @@ mod test {
     }
 
     #[rstest]
-    #[case::no_alpha("#ff0000", "color_map_to_hex(#{r:255, g:0, b:0})")]
-    #[case::with_alpha("#ff000080", "color_map_to_hex(#{r:255, g:0, b:0, a:128})")]
-    pub fn test_color_map_to_hex(
+    #[case::no_alpha("#ff0000", "color_rgba_to_hex(#{r:255, g:0, b:0})")]
+    #[case::with_alpha("#ff000080", "color_rgba_to_hex(#{r:255, g:0, b:0, a:128})")]
+    pub fn test_color_rgba_to_hex(
         #[case] expected: &str,
         #[case] expr: &str,
     ) -> TestResult {
+        assert_eq!(expected, run_expr::<String>(expr)?);
+        Ok(())
+    }
+
+    #[rstest]
+    #[case::red("#ff0000", "color_rgba_to_hex(hsl_to_rgb(rgb_to_hsl(#{r:255, g:0, b:0})))")]
+    #[case::green("#00ff00", "color_rgba_to_hex(hsl_to_rgb(rgb_to_hsl(#{r:0, g:255, b:0})))")]
+    #[case::blue("#0000ff", "color_rgba_to_hex(hsl_to_rgb(rgb_to_hsl(#{r:0, g:0, b:255})))")]
+    pub fn test_rgb_hsl_roundtrip_no_alpha(
+        #[case] expected: &str,
+        #[case] expr: &str,
+    ) -> TestResult {
+        assert_eq!(expected, run_expr::<String>(expr)?);
+        Ok(())
+    }
+
+    #[rstest]
+    #[case::with_alpha("#ff000080", "color_rgba_to_hex(hsl_to_rgb(rgb_to_hsl(#{r:255, g:0, b:0, a:128})))")]
+    #[case::no_alpha("#ff0000", "color_rgba_to_hex(hsl_to_rgb(rgb_to_hsl(#{r:255, g:0, b:0})))")]
+    pub fn test_rgb_hsl_roundtrip_with_alpha(
+        #[case] expected: &str,
+        #[case] expr: &str,
+    ) -> TestResult {
+        assert_eq!(expected, run_expr::<String>(expr)?);
+        Ok(())
+    }
+
+    #[rstest]
+    #[case::with_alpha("#70a6c1ff", "color_rgba_to_hex(hsl_to_rgb(#{h: 200, s: 40, l: 60, a: 255}))")]
+    #[case::no_alpha("#70a6c1", "color_rgba_to_hex(hsl_to_rgb(#{h: 200, s: 40, l: 60}))")]
+    pub fn test_hsl_to_rgb(
+        #[case] expected: &str,
+        #[case] expr: &str,
+    ) -> TestResult {
+        println!("expr: {:?}", run_expr::<String>(expr));
         assert_eq!(expected, run_expr::<String>(expr)?);
         Ok(())
     }
