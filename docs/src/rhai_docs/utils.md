@@ -14,33 +14,15 @@ A collection of utility functions
 
 <div class='doc-block'>
 
-## color_hex_to_rgb
+## color_hex_to_rgba
 
 <div class='doc-content'>
 
 ```rust,ignore
-color_hex_to_rgb(hex_string: &str) -> Result<Map>
+color_hex_to_rgba(hex_string: &str) -> Result<Map>
 ```
 
-Convert a hex color string to an RGB map.
-
-</div>
-</div>
-
-
-
-
-<div class='doc-block'>
-
-## color_hex_to_rgb_str
-
-<div class='doc-content'>
-
-```rust,ignore
-color_hex_to_rgb_str(hex_string: &str) -> Result<String>
-```
-
-Convert a hex color string to an RGB string.
+Convert a hex color string to an RGB or RGBA map.
 
 </div>
 </div>
@@ -68,15 +50,33 @@ Convert a hex color string to an RGBA string.
 
 <div class='doc-block'>
 
-## color_rgb_to_hex
+## color_rgba_to_hex
 
 <div class='doc-content'>
 
 ```rust,ignore
-color_rgb_to_hex(rgb_table: Map) -> Result<String>
+color_rgba_to_hex(rgb_table: Map) -> Result<String>
 ```
 
-Convert an RGB map to a hex color string.
+Convert an RGB or RGBA map to a hex color string.
+
+</div>
+</div>
+
+
+
+
+<div class='doc-block'>
+
+## hsl_to_rgb
+
+<div class='doc-content'>
+
+```rust,ignore
+hsl_to_rgb(hsl_map: Map) -> Result<Map>
+```
+
+Convert an HSL or HSLA map to an RGB or RGBA map.
 
 </div>
 </div>
@@ -131,6 +131,24 @@ regex_replace(pattern: &str, haystack: &str, replacement: &str) -> Result<String
 ```
 
 Replace a regex pattern in a string with a replacement.
+
+</div>
+</div>
+
+
+
+
+<div class='doc-block'>
+
+## rgb_to_hsl
+
+<div class='doc-content'>
+
+```rust,ignore
+rgb_to_hsl(rgb_map: Map) -> Result<Map>
+```
+
+Convert an RGB or RGBA map to an HSL or HSLA map.
 
 </div>
 </div>

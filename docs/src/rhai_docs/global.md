@@ -446,13 +446,13 @@ print(text.len);        // prints 17
 <div class='doc-content'>
 
 ```rust,ignore
-abs(x: i16) -> Result<i16, Box<EvalAltResult>>
-abs(x: i32) -> Result<i32, Box<EvalAltResult>>
 abs(x: i128) -> Result<i128, Box<EvalAltResult>>
-abs(x: i64) -> Result<i64, Box<EvalAltResult>>
 abs(x: f32) -> f32
+abs(x: i64) -> Result<i64, Box<EvalAltResult>>
+abs(x: i16) -> Result<i16, Box<EvalAltResult>>
 abs(x: i8) -> Result<i8, Box<EvalAltResult>>
 abs(x: f64) -> f64
+abs(x: i32) -> Result<i32, Box<EvalAltResult>>
 ```
 
 Return the absolute value of the number.
@@ -550,11 +550,11 @@ print(x.all(|v, i| i > v));     // prints false
 ```rust,ignore
 append(blob1: &mut Blob, blob2: Blob)
 append(blob: &mut Blob, character: char)
-append(array: &mut Array, new_array: Array)
 append(string: &mut ImmutableString, utf8: Blob)
+append(blob: &mut Blob, value: i64)
 append(string: &mut ImmutableString, mut item: Dynamic)
 append(blob: &mut Blob, string: &str)
-append(blob: &mut Blob, value: i64)
+append(array: &mut Array, new_array: Array)
 ```
 
 Add another BLOB to the end of the BLOB.
@@ -783,9 +783,9 @@ Return the smallest whole number larger than or equals to the floating-point num
 
 ```rust,ignore
 chars(string: &str) -> CharsStream
+chars(string: &str, range: Range<i64>) -> CharsStream
 chars(string: &str, start: i64) -> CharsStream
 chars(string: &str, range: RangeInclusive<i64>) -> CharsStream
-chars(string: &str, range: Range<i64>) -> CharsStream
 chars(string: &str, start: i64, len: i64) -> CharsStream
 ```
 
@@ -869,16 +869,32 @@ Clear the BLOB.
 <div class='doc-content'>
 
 ```rust,ignore
-contains(range: &mut Range<i64>, value: i64) -> bool
-contains(string: &str, character: char) -> bool
+contains(array: &mut Array, value: Dynamic) -> Result<bool, Box<EvalAltResult>>
 contains(blob: &mut Blob, value: i64) -> bool
+contains(string: &str, character: char) -> bool
+contains(range: &mut RangeInclusive<i64>, value: i64) -> bool
+contains(range: &mut Range<i64>, value: i64) -> bool
 contains(string: &str, match_string: &str) -> bool
 contains(map: &mut Map, property: &str) -> bool
-contains(range: &mut RangeInclusive<i64>, value: i64) -> bool
-contains(array: &mut Array, value: Dynamic) -> Result<bool, Box<EvalAltResult>>
 ```
 
-Return `true` if the range contains a specified value.
+Return `true` if the array contains an element that equals `value`.
+
+The operator `==` is used to compare elements with `value` and must be defined,
+otherwise `false` is assumed.
+
+This function also drives the `in` operator.
+
+#### Example
+
+```rhai
+let x = [1, 2, 3, 4, 5];
+
+// The 'in' operator calls 'contains' in the background
+if 4 in x {
+print("found!");
+}
+```
 
 </div>
 </div>
@@ -929,22 +945,22 @@ Return the hyperbolic cosine of the floating-point number in radians.
 <div class='doc-content'>
 
 ```rust,ignore
-crop(string: &mut ImmutableString, range: RangeInclusive<i64>)
-crop(string: &mut ImmutableString, start: i64)
 crop(string: &mut ImmutableString, range: Range<i64>)
+crop(string: &mut ImmutableString, start: i64)
+crop(string: &mut ImmutableString, range: RangeInclusive<i64>)
 crop(string: &mut ImmutableString, start: i64, len: i64)
 ```
 
-Remove all characters from the string except those within an inclusive `range`.
+Remove all characters from the string except those within an exclusive `range`.
 
 #### Example
 
 ```rhai
 let text = "hello, world!";
 
-text.crop(2..=8);
+text.crop(2..8);
 
-print(text);        // prints "llo, wo"
+print(text);        // prints "llo, w"
 ```
 
 </div>
@@ -961,16 +977,16 @@ print(text);        // prints "llo, wo"
 
 ```rust,ignore
 debug() -> ImmutableString
-debug(array: &mut Array) -> ImmutableString
-debug(string: &str) -> ImmutableString
-debug(number: f64) -> ImmutableString
-debug(f: &mut FnPtr) -> ImmutableString
-debug(item: &mut Dynamic) -> ImmutableString
-debug(map: &mut Map) -> ImmutableString
-debug(number: f32) -> ImmutableString
-debug(value: bool) -> ImmutableString
 debug(unit: ()) -> ImmutableString
+debug(item: &mut Dynamic) -> ImmutableString
 debug(character: char) -> ImmutableString
+debug(string: &str) -> ImmutableString
+debug(value: bool) -> ImmutableString
+debug(number: f64) -> ImmutableString
+debug(array: &mut Array) -> ImmutableString
+debug(map: &mut Map) -> ImmutableString
+debug(f: &mut FnPtr) -> ImmutableString
+debug(number: f32) -> ImmutableString
 ```
 
 Return the empty string.
@@ -989,8 +1005,8 @@ Return the empty string.
 
 ```rust,ignore
 dedup(array: &mut Array)
-dedup(array: &mut Array, comparer: &str) -> Result<(), Box<EvalAltResult>>
 dedup(array: &mut Array, comparer: FnPtr)
+dedup(array: &mut Array, comparer: &str) -> Result<(), Box<EvalAltResult>>
 ```
 
 Remove duplicated _consecutive_ elements from the array.
@@ -1021,50 +1037,33 @@ print(x);       // prints "[1, 2, 3, 4, 3, 2, 1]"
 <div class='doc-content'>
 
 ```rust,ignore
+drain(array: &mut Array, range: RangeInclusive<i64>) -> Array
+drain(blob: &mut Blob, range: RangeInclusive<i64>) -> Blob
+drain(blob: &mut Blob, range: Range<i64>) -> Blob
+drain(map: &mut Map, filter: FnPtr) -> Result<Map, Box<EvalAltResult>>
 drain(array: &mut Array, filter: &str) -> Result<Array, Box<EvalAltResult>>
 drain(array: &mut Array, filter: FnPtr) -> Result<Array, Box<EvalAltResult>>
-drain(blob: &mut Blob, range: Range<i64>) -> Blob
 drain(array: &mut Array, range: Range<i64>) -> Array
-drain(blob: &mut Blob, range: RangeInclusive<i64>) -> Blob
-drain(map: &mut Map, filter: FnPtr) -> Result<Map, Box<EvalAltResult>>
-drain(array: &mut Array, range: RangeInclusive<i64>) -> Array
-drain(blob: &mut Blob, start: i64, len: i64) -> Blob
 drain(array: &mut Array, start: i64, len: i64) -> Array
+drain(blob: &mut Blob, start: i64, len: i64) -> Blob
 ```
 
-Remove all elements in the array that returns `true` when applied a function named by `filter`
-and return them as a new array.
-
-#### Deprecated API
-
-This method is deprecated and will be removed from the next major version.
-Use `array.drain(Fn("fn_name"))` instead.
-
-#### Function Parameters
-
-A function with the same name as the value of `filter` must exist taking these parameters:
-
-* `element`: copy of array element
-* `index` _(optional)_: current index in the array
+Remove all elements in the array within an inclusive `range` and return them as a new array.
 
 #### Example
 
 ```rhai
-fn small(x) { x < 3 }
-
-fn screen(x, i) { x + i > 5 }
-
 let x = [1, 2, 3, 4, 5];
 
-let y = x.drain("small");
+let y = x.drain(1..=2);
 
-print(x);       // prints "[3, 4, 5]"
+print(x);       // prints "[1, 4, 5]"
 
-print(y);       // prints "[1, 2]"
+print(y);       // prints "[2, 3]"
 
-let z = x.drain("screen");
+let z = x.drain(2..=2);
 
-print(x);       // prints "[3, 4]"
+print(x);       // prints "[1, 4]"
 
 print(z);       // prints "[5]"
 ```
@@ -1199,35 +1198,33 @@ Return the exponential of the floating-point number.
 <div class='doc-content'>
 
 ```rust,ignore
-extract(blob: &mut Blob, start: i64) -> Blob
 extract(array: &mut Array, start: i64) -> Array
-extract(blob: &mut Blob, range: Range<i64>) -> Blob
 extract(blob: &mut Blob, range: RangeInclusive<i64>) -> Blob
 extract(array: &mut Array, range: RangeInclusive<i64>) -> Array
+extract(blob: &mut Blob, range: Range<i64>) -> Blob
 extract(array: &mut Array, range: Range<i64>) -> Array
+extract(blob: &mut Blob, start: i64) -> Blob
 extract(blob: &mut Blob, start: i64, len: i64) -> Blob
 extract(array: &mut Array, start: i64, len: i64) -> Array
 ```
 
-Copy a portion of the BLOB beginning at the `start` position till the end and return it as
-a new BLOB.
+Copy a portion of the array beginning at the `start` position till the end and return it as
+a new array.
 
-* If `start` < 0, position counts from the end of the BLOB (`-1` is the last byte).
-* If `start` < -length of BLOB, the entire BLOB is copied and returned.
-* If `start` ≥ length of BLOB, an empty BLOB is returned.
+* If `start` < 0, position counts from the end of the array (`-1` is the last element).
+* If `start` < -length of array, the entire array is copied and returned.
+* If `start` ≥ length of array, an empty array is returned.
 
 #### Example
 
 ```rhai
-let b = blob();
+let x = [1, 2, 3, 4, 5];
 
-b += 1; b += 2; b += 3; b += 4; b += 5;
+print(x.extract(2));        // prints "[3, 4, 5]"
 
-print(b.extract(2));        // prints "[030405]"
+print(x.extract(-3));       // prints "[3, 4, 5]"
 
-print(b.extract(-3));       // prints "[030405]"
-
-print(b);                   // prints "[0102030405]"
+print(x);                   // prints "[1, 2, 3, 4, 5]"
 ```
 
 </div>
@@ -1291,31 +1288,37 @@ print(m);       // prints "#{a:1, b:2, c:3, d:0}"
 <div class='doc-content'>
 
 ```rust,ignore
-filter(map: &mut Map, filter: FnPtr) -> Result<Map, Box<EvalAltResult>>
-filter(array: &mut Array, filter_func: &str) -> Result<Array, Box<EvalAltResult>>
 filter(array: &mut Array, filter: FnPtr) -> Result<Array, Box<EvalAltResult>>
+filter(array: &mut Array, filter_func: &str) -> Result<Array, Box<EvalAltResult>>
+filter(map: &mut Map, filter: FnPtr) -> Result<Map, Box<EvalAltResult>>
 ```
 
-Iterate through all the elements in the object map, applying a `filter` function to each
-and return a new collection of all elements that return `true` as a new object map.
+Iterate through all the elements in the array, applying a `filter` function to each element
+in turn, and return a copy of all elements (in order) that return `true` as a new array.
+
+#### No Function Parameter
+
+Array element (mutable) is bound to `this`.
+
+This method is marked _pure_; the `filter` function should not mutate array elements.
 
 #### Function Parameters
 
-* `key`: current key
-* `value` _(optional)_: copy of element (bound to `this` if omitted)
+* `element`: copy of array element
+* `index` _(optional)_: current index in the array
 
 #### Example
 
 ```rhai
-let x = #{a:1, b:2, c:3, d:4, e:5};
+let x = [1, 2, 3, 4, 5];
 
-let y = x.filter(|k| this >= 3);
+let y = x.filter(|v| v >= 3);
 
-print(y);       // prints #{"c":3, "d":4, "e":5}
+print(y);       // prints "[3, 4, 5]"
 
-let y = x.filter(|k, v| k != "d" && v < 5);
+let y = x.filter(|v, i| v * i >= 10);
 
-print(y);       // prints #{"a":1, "b":2, "c":3}
+print(y);       // prints "[12, 20]"
 ```
 
 </div>
@@ -1653,28 +1656,28 @@ Return the fractional part of the floating-point number.
 <div class='doc-content'>
 
 ```rust,ignore
-get(array: &mut Array, index: i64) -> Dynamic
-get(map: &mut Map, property: &str) -> Dynamic
 get(string: &str, index: i64) -> Dynamic
 get(blob: &mut Blob, index: i64) -> i64
+get(map: &mut Map, property: &str) -> Dynamic
+get(array: &mut Array, index: i64) -> Dynamic
 ```
 
-Get a copy of the element at the `index` position in the array.
+Get the character at the `index` position in the string.
 
-* If `index` < 0, position counts from the end of the array (`-1` is the last element).
-* If `index` < -length of array, `()` is returned.
-* If `index` ≥ length of array, `()` is returned.
+* If `index` < 0, position counts from the end of the string (`-1` is the last character).
+* If `index` < -length of string, zero is returned.
+* If `index` ≥ length of string, zero is returned.
 
 #### Example
 
 ```rhai
-let x = [1, 2, 3];
+let text = "hello, world!";
 
-print(x.get(0));        // prints 1
+print(text.get(0));     // prints 'h'
 
-print(x.get(-1));       // prints 3
+print(text.get(-1));    // prints '!'
 
-print(x.get(99));       // prints empty (for '()')
+print(text.get(99));    // prints empty (for '()')'
 ```
 
 </div>
@@ -1722,19 +1725,19 @@ print(x.get_bit(-48));  // prints true on 64-bit
 <div class='doc-content'>
 
 ```rust,ignore
-get_bits(value: i64, range: Range<i64>) -> Result<i64, Box<EvalAltResult>>
 get_bits(value: i64, range: RangeInclusive<i64>) -> Result<i64, Box<EvalAltResult>>
+get_bits(value: i64, range: Range<i64>) -> Result<i64, Box<EvalAltResult>>
 get_bits(value: i64, start: i64, bits: i64) -> Result<i64, Box<EvalAltResult>>
 ```
 
-Return an exclusive range of bits in the number as a new number.
+Return an inclusive range of bits in the number as a new number.
 
 #### Example
 
 ```rhai
 let x = 123456;
 
-print(x.get_bits(5..10));       // print 18
+print(x.get_bits(5..=9));       // print 18
 ```
 
 </div>
@@ -1788,34 +1791,29 @@ Return the hypotenuse of a triangle with sides `x` and `y`.
 <div class='doc-content'>
 
 ```rust,ignore
+index_of(string: &str, character: char) -> i64
 index_of(array: &mut Array, value: Dynamic) -> Result<i64, Box<EvalAltResult>>
 index_of(array: &mut Array, filter: &str) -> Result<i64, Box<EvalAltResult>>
-index_of(string: &str, find_string: &str) -> i64
 index_of(array: &mut Array, filter: FnPtr) -> Result<i64, Box<EvalAltResult>>
-index_of(string: &str, character: char) -> i64
-index_of(array: &mut Array, filter: FnPtr, start: i64) -> Result<i64, Box<EvalAltResult>>
+index_of(string: &str, find_string: &str) -> i64
 index_of(string: &str, character: char, start: i64) -> i64
+index_of(array: &mut Array, value: Dynamic, start: i64) -> Result<i64, Box<EvalAltResult>>
+index_of(array: &mut Array, filter: FnPtr, start: i64) -> Result<i64, Box<EvalAltResult>>
 index_of(array: &mut Array, filter: &str, start: i64) -> Result<i64, Box<EvalAltResult>>
 index_of(string: &str, find_string: &str, start: i64) -> i64
-index_of(array: &mut Array, value: Dynamic, start: i64) -> Result<i64, Box<EvalAltResult>>
 ```
 
-Find the first element in the array that equals a particular `value` and return its index.
-If no element equals `value`, `-1` is returned.
-
-The operator `==` is used to compare elements with `value` and must be defined,
-otherwise `false` is assumed.
+Find the specified `character` in the string and return the first index where it is found.
+If the `character` is not found, `-1` is returned.
 
 #### Example
 
 ```rhai
-let x = [1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 5];
+let text = "hello, world!";
 
-print(x.index_of(4));       // prints 3 (first index)
+print(text.index_of('l'));      // prints 2 (first index)
 
-print(x.index_of(9));       // prints -1
-
-print(x.index_of("foo"));   // prints -1: strings do not equal numbers
+print(text.index_of('x'));      // prints -1
 ```
 
 </div>
@@ -1831,28 +1829,26 @@ print(x.index_of("foo"));   // prints -1: strings do not equal numbers
 <div class='doc-content'>
 
 ```rust,ignore
-insert(array: &mut Array, index: i64, item: Dynamic)
 insert(blob: &mut Blob, index: i64, value: i64)
+insert(array: &mut Array, index: i64, item: Dynamic)
 ```
 
-Add a new element into the array at a particular `index` position.
+Add a byte `value` to the BLOB at a particular `index` position.
 
-* If `index` < 0, position counts from the end of the array (`-1` is the last element).
-* If `index` < -length of array, the element is added to the beginning of the array.
-* If `index` ≥ length of array, the element is appended to the end of the array.
+* If `index` < 0, position counts from the end of the BLOB (`-1` is the last byte).
+* If `index` < -length of BLOB, the byte value is added to the beginning of the BLOB.
+* If `index` ≥ length of BLOB, the byte value is appended to the end of the BLOB.
+
+Only the lower 8 bits of the `value` are used; all other bits are ignored.
 
 #### Example
 
 ```rhai
-let x = [1, 2, 3];
+let b = blob(5, 0x42);
 
-x.insert(0, "hello");
+b.insert(2, 0x18);
 
-x.insert(2, true);
-
-x.insert(-2, 42);
-
-print(x);       // prints ["hello", 1, true, 2, 42, 3]
+print(b);       // prints "[4242184242]"
 ```
 
 </div>
@@ -1994,12 +1990,12 @@ print(f.is_anonymous);      // prints true
 <div class='doc-content'>
 
 ```rust,ignore
-is_empty(range: &mut RangeInclusive<i64>) -> bool
-is_empty(map: &mut Map) -> bool
 is_empty(range: &mut Range<i64>) -> bool
 is_empty(blob: &mut Blob) -> bool
+is_empty(map: &mut Map) -> bool
 is_empty(array: &mut Array) -> bool
 is_empty(string: &str) -> bool
+is_empty(range: &mut RangeInclusive<i64>) -> bool
 ```
 
 Return true if the range contains no items.
@@ -2017,16 +2013,16 @@ Return true if the range contains no items.
 <div class='doc-content'>
 
 ```rust,ignore
-is_even(x: i64) -> bool
-is_even(x: u64) -> bool
-is_even(x: i8) -> bool
-is_even(x: u8) -> bool
-is_even(x: i16) -> bool
-is_even(x: i128) -> bool
-is_even(x: u16) -> bool
-is_even(x: u32) -> bool
 is_even(x: i32) -> bool
+is_even(x: u32) -> bool
+is_even(x: u64) -> bool
+is_even(x: u16) -> bool
+is_even(x: i8) -> bool
+is_even(x: i64) -> bool
 is_even(x: u128) -> bool
+is_even(x: i128) -> bool
+is_even(x: i16) -> bool
+is_even(x: u8) -> bool
 ```
 
 Return true if the number is even.
@@ -2044,8 +2040,8 @@ Return true if the number is even.
 <div class='doc-content'>
 
 ```rust,ignore
-is_exclusive(range: &mut Range<i64>) -> bool
 is_exclusive(range: &mut RangeInclusive<i64>) -> bool
+is_exclusive(range: &mut Range<i64>) -> bool
 ```
 
 Return `true` if the range is exclusive.
@@ -2081,8 +2077,8 @@ Return `true` if the floating-point number is finite.
 <div class='doc-content'>
 
 ```rust,ignore
-is_inclusive(range: &mut RangeInclusive<i64>) -> bool
 is_inclusive(range: &mut Range<i64>) -> bool
+is_inclusive(range: &mut RangeInclusive<i64>) -> bool
 ```
 
 Return `true` if the range is inclusive.
@@ -2136,16 +2132,16 @@ Return `true` if the floating-point number is `NaN` (Not A Number).
 <div class='doc-content'>
 
 ```rust,ignore
-is_odd(x: i16) -> bool
-is_odd(x: i128) -> bool
-is_odd(x: u16) -> bool
-is_odd(x: u128) -> bool
-is_odd(x: u32) -> bool
-is_odd(x: i32) -> bool
-is_odd(x: i64) -> bool
 is_odd(x: u64) -> bool
+is_odd(x: u16) -> bool
 is_odd(x: i8) -> bool
+is_odd(x: i32) -> bool
+is_odd(x: u32) -> bool
 is_odd(x: u8) -> bool
+is_odd(x: u128) -> bool
+is_odd(x: i64) -> bool
+is_odd(x: i128) -> bool
+is_odd(x: i16) -> bool
 ```
 
 Return true if the number is odd.
@@ -2163,21 +2159,21 @@ Return true if the number is odd.
 <div class='doc-content'>
 
 ```rust,ignore
-is_zero(x: f64) -> bool
-is_zero(x: i8) -> bool
 is_zero(x: u8) -> bool
-is_zero(x: u64) -> bool
-is_zero(x: f32) -> bool
-is_zero(x: i64) -> bool
-is_zero(x: i32) -> bool
-is_zero(x: u32) -> bool
-is_zero(x: u128) -> bool
-is_zero(x: i128) -> bool
-is_zero(x: u16) -> bool
 is_zero(x: i16) -> bool
+is_zero(x: u128) -> bool
+is_zero(x: i64) -> bool
+is_zero(x: i128) -> bool
+is_zero(x: f32) -> bool
+is_zero(x: i8) -> bool
+is_zero(x: u16) -> bool
+is_zero(x: u64) -> bool
+is_zero(x: u32) -> bool
+is_zero(x: i32) -> bool
+is_zero(x: f64) -> bool
 ```
 
-Return true if the floating-point number is zero.
+Return true if the number is zero.
 
 </div>
 </div>
@@ -2218,23 +2214,13 @@ print(m.keys());        // prints ["a", "b", "c"]
 <div class='doc-content'>
 
 ```rust,ignore
-len(blob: &mut Blob) -> i64
 len(map: &mut Map) -> i64
+len(blob: &mut Blob) -> i64
 len(array: &mut Array) -> i64
 len(string: &str) -> i64
 ```
 
-Return the length of the BLOB.
-
-#### Example
-
-```rhai
-let b = blob(10, 0x42);
-
-print(b);           // prints "[4242424242424242 4242]"
-
-print(b.len());     // prints 10
-```
+Return the number of properties in the object map.
 
 </div>
 </div>
@@ -2315,20 +2301,20 @@ print(text);        // prints "hello, world!";
 <div class='doc-content'>
 
 ```rust,ignore
-make_upper(string: &mut ImmutableString)
 make_upper(character: &mut char)
+make_upper(string: &mut ImmutableString)
 ```
 
-Convert the string to all upper-case.
+Convert the character to upper-case.
 
 #### Example
 
 ```rhai
-let text = "hello, world!"
+let ch = 'a';
 
-text.make_upper();
+ch.make_upper();
 
-print(text);        // prints "HELLO, WORLD!";
+print(ch);          // prints 'A'
 ```
 
 </div>
@@ -2344,21 +2330,20 @@ print(text);        // prints "HELLO, WORLD!";
 <div class='doc-content'>
 
 ```rust,ignore
-map(array: &mut Array, mapper: &str) -> Result<Array, Box<EvalAltResult>>
 map(array: &mut Array, map: FnPtr) -> Result<Array, Box<EvalAltResult>>
+map(array: &mut Array, mapper: &str) -> Result<Array, Box<EvalAltResult>>
 ```
 
-Iterate through all the elements in the array, applying a function named by `mapper` to each
-element in turn, and return the results as a new array.
+Iterate through all the elements in the array, applying a `mapper` function to each element
+in turn, and return the results as a new array.
 
-#### Deprecated API
+#### No Function Parameter
 
-This method is deprecated and will be removed from the next major version.
-Use `array.map(Fn("fn_name"))` instead.
+Array element (mutable) is bound to `this`.
+
+This method is marked _pure_; the `mapper` function should not mutate array elements.
 
 #### Function Parameters
-
-A function with the same name as the value of `mapper` must exist taking these parameters:
 
 * `element`: copy of array element
 * `index` _(optional)_: current index in the array
@@ -2366,17 +2351,13 @@ A function with the same name as the value of `mapper` must exist taking these p
 #### Example
 
 ```rhai
-fn square(x) { x * x }
-
-fn multiply(x, i) { x * i }
-
 let x = [1, 2, 3, 4, 5];
 
-let y = x.map("square");
+let y = x.map(|v| v * v);
 
 print(y);       // prints "[1, 4, 9, 16, 25]"
 
-let y = x.map("multiply");
+let y = x.map(|v, i| v * i);
 
 print(y);       // prints "[0, 2, 6, 12, 20]"
 ```
@@ -2394,34 +2375,34 @@ print(y);       // prints "[0, 2, 6, 12, 20]"
 <div class='doc-content'>
 
 ```rust,ignore
-max(x: u16, y: u16) -> u16
-max(x: i16, y: i16) -> i16
-max(x: i64, y: i64) -> i64
-max(x: i32, y: i32) -> i32
-max(x: i64, y: f32) -> f32
 max(char1: char, char2: char) -> char
-max(x: f32, y: f32) -> f32
-max(x: f32, y: f64) -> f64
-max(x: f32, y: i64) -> f32
-max(x: u32, y: u32) -> u32
-max(x: i128, y: i128) -> i128
-max(x: i64, y: f64) -> f64
-max(x: u8, y: u8) -> u8
-max(x: f64, y: f64) -> f64
+max(x: u16, y: u16) -> u16
+max(x: i64, y: i64) -> i64
 max(x: u128, y: u128) -> u128
-max(string1: ImmutableString, string2: ImmutableString) -> ImmutableString
-max(x: f64, y: i64) -> f64
-max(x: u64, y: u64) -> u64
-max(x: i8, y: i8) -> i8
 max(x: f64, y: f32) -> f64
+max(x: f32, y: f64) -> f64
+max(string1: ImmutableString, string2: ImmutableString) -> ImmutableString
+max(x: i64, y: f32) -> f32
+max(x: i32, y: i32) -> i32
+max(x: f32, y: f32) -> f32
+max(x: i8, y: i8) -> i8
+max(x: f64, y: f64) -> f64
+max(x: f64, y: i64) -> f64
+max(x: i64, y: f64) -> f64
+max(x: i128, y: i128) -> i128
+max(x: f32, y: i64) -> f32
+max(x: u64, y: u64) -> u64
+max(x: i16, y: i16) -> i16
+max(x: u32, y: u32) -> u32
+max(x: u8, y: u8) -> u8
 ```
 
-Return the number that is larger than the other number.
+Return the character that is lexically greater than the other character.
 
 #### Example
 
 ```rhai
-max(42, 123);   // returns 132
+max('h', 'w');      // returns 'w'
 ```
 
 </div>
@@ -2437,34 +2418,34 @@ max(42, 123);   // returns 132
 <div class='doc-content'>
 
 ```rust,ignore
-min(x: f32, y: i64) -> f32
-min(x: u32, y: u32) -> u32
-min(x: i128, y: i128) -> i128
-min(x: u16, y: u16) -> u16
-min(x: i16, y: i16) -> i16
-min(x: i64, y: i64) -> i64
-min(x: i32, y: i32) -> i32
-min(x: i64, y: f32) -> f32
 min(char1: char, char2: char) -> char
-min(x: f32, y: f32) -> f32
-min(x: f32, y: f64) -> f64
-min(x: f64, y: f64) -> f64
-min(string1: ImmutableString, string2: ImmutableString) -> ImmutableString
+min(x: u16, y: u16) -> u16
+min(x: i64, y: i64) -> i64
 min(x: u128, y: u128) -> u128
-min(x: u64, y: u64) -> u64
-min(x: f64, y: i64) -> f64
-min(x: i8, y: i8) -> i8
 min(x: f64, y: f32) -> f64
+min(x: f32, y: f64) -> f64
+min(string1: ImmutableString, string2: ImmutableString) -> ImmutableString
+min(x: i64, y: f32) -> f32
+min(x: i32, y: i32) -> i32
+min(x: f32, y: f32) -> f32
+min(x: i8, y: i8) -> i8
+min(x: f64, y: f64) -> f64
+min(x: f64, y: i64) -> f64
 min(x: i64, y: f64) -> f64
+min(x: i128, y: i128) -> i128
+min(x: f32, y: i64) -> f32
+min(x: u64, y: u64) -> u64
+min(x: i16, y: i16) -> i16
+min(x: u32, y: u32) -> u32
 min(x: u8, y: u8) -> u8
 ```
 
-Return the number that is smaller than the other number.
+Return the character that is lexically smaller than the other character.
 
 #### Example
 
 ```rhai
-min(42, 123);   // returns 42
+max('h', 'w');      // returns 'h'
 ```
 
 </div>
@@ -2539,9 +2520,9 @@ print(f.name);      // prints "double"
 
 ```rust,ignore
 pad(blob: &mut Blob, len: i64, value: i64) -> Result<(), Box<EvalAltResult>>
-pad(array: &mut Array, len: i64, item: Dynamic) -> Result<(), Box<EvalAltResult>>
 pad(string: &mut ImmutableString, len: i64, padding: &str) -> Result<(), Box<EvalAltResult>>
 pad(string: &mut ImmutableString, len: i64, character: char) -> Result<(), Box<EvalAltResult>>
+pad(array: &mut Array, len: i64, item: Dynamic) -> Result<(), Box<EvalAltResult>>
 ```
 
 Pad the BLOB to at least the specified length with copies of a specified byte `value`.
@@ -2773,8 +2754,8 @@ print(x.to_hex());              // prints "0302"
 
 ```rust,ignore
 pop(array: &mut Array) -> Dynamic
-pop(string: &mut ImmutableString) -> Dynamic
 pop(blob: &mut Blob) -> i64
+pop(string: &mut ImmutableString) -> Dynamic
 pop(string: &mut ImmutableString, len: i64) -> ImmutableString
 ```
 
@@ -2806,15 +2787,15 @@ print(x);           // prints "[1, 2]"
 
 ```rust,ignore
 print() -> ImmutableString
-print(number: f32) -> ImmutableString
-print(item: &mut Dynamic) -> ImmutableString
-print(map: &mut Map) -> ImmutableString
-print(string: ImmutableString) -> ImmutableString
+print(value: bool) -> ImmutableString
 print(number: f64) -> ImmutableString
-print(array: &mut Array) -> ImmutableString
 print(character: char) -> ImmutableString
 print(unit: ()) -> ImmutableString
-print(value: bool) -> ImmutableString
+print(item: &mut Dynamic) -> ImmutableString
+print(string: ImmutableString) -> ImmutableString
+print(map: &mut Map) -> ImmutableString
+print(array: &mut Array) -> ImmutableString
+print(number: f32) -> ImmutableString
 ```
 
 Return the empty string.
@@ -2863,56 +2844,48 @@ print(x);       // prints [1, 2, 3, "hello"]
 <div class='doc-content'>
 
 ```rust,ignore
-range(range: std::ops::Range<FLOAT>, step: f64) -> Result<StepRange<FLOAT>, Box<EvalAltResult>>
+range(from: i128, to: i128) -> Range<i128>
+range(range: std::ops::Range<i32>, step: i32) -> Result<StepRange<i32>, Box<EvalAltResult>>
 range(range: std::ops::Range<u16>, step: u16) -> Result<StepRange<u16>, Box<EvalAltResult>>
 range(from: u8, to: u8) -> Range<u8>
-range(range: std::ops::Range<i64>, step: i64) -> Result<StepRange<i64>, Box<EvalAltResult>>
-range(range: std::ops::Range<u64>, step: u64) -> Result<StepRange<u64>, Box<EvalAltResult>>
-range(range: std::ops::Range<u8>, step: u8) -> Result<StepRange<u8>, Box<EvalAltResult>>
-range(from: u128, to: u128) -> Range<u128>
-range(from: u64, to: u64) -> Range<u64>
-range(from: i8, to: i8) -> Range<i8>
-range(range: std::ops::Range<i128>, step: i128) -> Result<StepRange<i128>, Box<EvalAltResult>>
-range(from: u16, to: u16) -> Range<u16>
-range(from: i16, to: i16) -> Range<i16>
-range(from: i64, to: i64) -> Range<i64>
-range(from: i32, to: i32) -> Range<i32>
 range(range: std::ops::Range<u32>, step: u32) -> Result<StepRange<u32>, Box<EvalAltResult>>
-range(from: i128, to: i128) -> Range<i128>
-range(range: std::ops::Range<u128>, step: u128) -> Result<StepRange<u128>, Box<EvalAltResult>>
-range(range: std::ops::Range<i8>, step: i8) -> Result<StepRange<i8>, Box<EvalAltResult>>
-range(range: std::ops::Range<i32>, step: i32) -> Result<StepRange<i32>, Box<EvalAltResult>>
 range(from: u32, to: u32) -> Range<u32>
+range(from: i16, to: i16) -> Range<i16>
+range(from: u64, to: u64) -> Range<u64>
+range(range: std::ops::Range<i128>, step: i128) -> Result<StepRange<i128>, Box<EvalAltResult>>
+range(from: i32, to: i32) -> Range<i32>
+range(range: std::ops::Range<i8>, step: i8) -> Result<StepRange<i8>, Box<EvalAltResult>>
 range(range: std::ops::Range<i16>, step: i16) -> Result<StepRange<i16>, Box<EvalAltResult>>
-range(from: i32, to: i32, step: i32) -> Result<StepRange<i32>, Box<EvalAltResult>>
-range(from: u16, to: u16, step: u16) -> Result<StepRange<u16>, Box<EvalAltResult>>
+range(range: std::ops::Range<u128>, step: u128) -> Result<StepRange<u128>, Box<EvalAltResult>>
+range(range: std::ops::Range<FLOAT>, step: f64) -> Result<StepRange<FLOAT>, Box<EvalAltResult>>
+range(from: i8, to: i8) -> Range<i8>
+range(range: std::ops::Range<i64>, step: i64) -> Result<StepRange<i64>, Box<EvalAltResult>>
+range(range: std::ops::Range<u8>, step: u8) -> Result<StepRange<u8>, Box<EvalAltResult>>
+range(from: u16, to: u16) -> Range<u16>
+range(from: u128, to: u128) -> Range<u128>
+range(from: i64, to: i64) -> Range<i64>
+range(range: std::ops::Range<u64>, step: u64) -> Result<StepRange<u64>, Box<EvalAltResult>>
+range(from: u64, to: u64, step: u64) -> Result<StepRange<u64>, Box<EvalAltResult>>
 range(from: u8, to: u8, step: u8) -> Result<StepRange<u8>, Box<EvalAltResult>>
+range(from: f64, to: f64, step: f64) -> Result<StepRange<FLOAT>, Box<EvalAltResult>>
+range(from: u32, to: u32, step: u32) -> Result<StepRange<u32>, Box<EvalAltResult>>
+range(from: i32, to: i32, step: i32) -> Result<StepRange<i32>, Box<EvalAltResult>>
+range(from: u128, to: u128, step: u128) -> Result<StepRange<u128>, Box<EvalAltResult>>
+range(from: u16, to: u16, step: u16) -> Result<StepRange<u16>, Box<EvalAltResult>>
+range(from: i128, to: i128, step: i128) -> Result<StepRange<i128>, Box<EvalAltResult>>
 range(from: i64, to: i64, step: i64) -> Result<StepRange<i64>, Box<EvalAltResult>>
 range(from: i16, to: i16, step: i16) -> Result<StepRange<i16>, Box<EvalAltResult>>
-range(from: u32, to: u32, step: u32) -> Result<StepRange<u32>, Box<EvalAltResult>>
-range(from: i128, to: i128, step: i128) -> Result<StepRange<i128>, Box<EvalAltResult>>
-range(from: u64, to: u64, step: u64) -> Result<StepRange<u64>, Box<EvalAltResult>>
-range(from: u128, to: u128, step: u128) -> Result<StepRange<u128>, Box<EvalAltResult>>
 range(from: i8, to: i8, step: i8) -> Result<StepRange<i8>, Box<EvalAltResult>>
-range(from: f64, to: f64, step: f64) -> Result<StepRange<FLOAT>, Box<EvalAltResult>>
 ```
 
-Return an iterator over an exclusive range, each iteration increasing by `step`.
-
-If `range` is reversed and `step` < 0, iteration goes backwards.
-
-Otherwise, if `range` is empty, an empty iterator is returned.
+Return an iterator over the exclusive range of `from..to`.
+The value `to` is never included.
 
 #### Example
 
 ```rhai
-// prints all values from 8 to 17 in steps of 3
-for n in range(8..18, 3) {
-print(n);
-}
-
-// prints all values down from 18 to 9 in steps of -3
-for n in range(18..8, -3) {
+// prints all values from 8 to 17
+for n in range(8, 18) {
 print(n);
 }
 ```
@@ -2932,8 +2905,8 @@ print(n);
 ```rust,ignore
 reduce(array: &mut Array, reducer: FnPtr) -> Result<Dynamic, Box<EvalAltResult>>
 reduce(array: &mut Array, reducer: &str) -> Result<Dynamic, Box<EvalAltResult>>
-reduce(array: &mut Array, reducer: FnPtr, initial: Dynamic) -> Result<Dynamic, Box<EvalAltResult>>
 reduce(array: &mut Array, reducer: &str, initial: Dynamic) -> Result<Dynamic, Box<EvalAltResult>>
+reduce(array: &mut Array, reducer: FnPtr, initial: Dynamic) -> Result<Dynamic, Box<EvalAltResult>>
 ```
 
 Reduce an array by iterating through all elements while applying the `reducer` function.
@@ -2975,8 +2948,8 @@ print(y);       // prints 25
 ```rust,ignore
 reduce_rev(array: &mut Array, reducer: FnPtr) -> Result<Dynamic, Box<EvalAltResult>>
 reduce_rev(array: &mut Array, reducer: &str) -> Result<Dynamic, Box<EvalAltResult>>
-reduce_rev(array: &mut Array, reducer: &str, initial: Dynamic) -> Result<Dynamic, Box<EvalAltResult>>
 reduce_rev(array: &mut Array, reducer: FnPtr, initial: Dynamic) -> Result<Dynamic, Box<EvalAltResult>>
+reduce_rev(array: &mut Array, reducer: &str, initial: Dynamic) -> Result<Dynamic, Box<EvalAltResult>>
 ```
 
 Reduce an array by iterating through all elements, in _reverse_ order,
@@ -3017,27 +2990,33 @@ print(y);       // prints 25
 <div class='doc-content'>
 
 ```rust,ignore
+remove(blob: &mut Blob, index: i64) -> i64
+remove(string: &mut ImmutableString, character: char)
+remove(string: &mut ImmutableString, sub_string: &str)
 remove(map: &mut Map, property: &str) -> Dynamic
 remove(array: &mut Array, index: i64) -> Dynamic
-remove(string: &mut ImmutableString, character: char)
-remove(blob: &mut Blob, index: i64) -> i64
-remove(string: &mut ImmutableString, sub_string: &str)
 ```
 
-Remove any property of the specified `name` from the object map, returning its value.
+Remove the byte at the specified `index` from the BLOB and return it.
 
-If the property does not exist, `()` is returned.
+* If `index` < 0, position counts from the end of the BLOB (`-1` is the last byte).
+* If `index` < -length of BLOB, zero is returned.
+* If `index` ≥ length of BLOB, zero is returned.
 
 #### Example
 
 ```rhai
-let m = #{a:1, b:2, c:3};
+let b = blob();
 
-let x = m.remove("b");
+b += 1; b += 2; b += 3; b += 4; b += 5;
 
-print(x);       // prints 2
+print(x.remove(1));     // prints 2
 
-print(m);       // prints "#{a:1, c:3}"
+print(x);               // prints "[01030405]"
+
+print(x.remove(-2));    // prints 4
+
+print(x);               // prints "[010305]"
 ```
 
 </div>
@@ -3053,22 +3032,22 @@ print(m);       // prints "#{a:1, c:3}"
 <div class='doc-content'>
 
 ```rust,ignore
-replace(string: &mut ImmutableString, find_character: char, substitute_character: char)
-replace(string: &mut ImmutableString, find_character: char, substitute_string: &str)
 replace(string: &mut ImmutableString, find_string: &str, substitute_string: &str)
+replace(string: &mut ImmutableString, find_character: char, substitute_string: &str)
+replace(string: &mut ImmutableString, find_character: char, substitute_character: char)
 replace(string: &mut ImmutableString, find_string: &str, substitute_character: char)
 ```
 
-Replace all occurrences of the specified character in the string with another character.
+Replace all occurrences of the specified sub-string in the string with another string.
 
 #### Example
 
 ```rhai
 let text = "hello, world! hello, foobar!";
 
-text.replace("l", '*');
+text.replace("hello", "hey");
 
-print(text);        // prints "he**o, wor*d! he**o, foobar!"
+print(text);        // prints "hey, world! hey, foobar!"
 ```
 
 </div>
@@ -3084,18 +3063,18 @@ print(text);        // prints "he**o, wor*d! he**o, foobar!"
 <div class='doc-content'>
 
 ```rust,ignore
-retain(blob: &mut Blob, range: RangeInclusive<i64>) -> Blob
-retain(map: &mut Map, filter: FnPtr) -> Result<Map, Box<EvalAltResult>>
-retain(array: &mut Array, range: RangeInclusive<i64>) -> Array
-retain(array: &mut Array, range: Range<i64>) -> Array
 retain(blob: &mut Blob, range: Range<i64>) -> Blob
+retain(blob: &mut Blob, range: RangeInclusive<i64>) -> Blob
+retain(array: &mut Array, range: RangeInclusive<i64>) -> Array
 retain(array: &mut Array, filter: FnPtr) -> Result<Array, Box<EvalAltResult>>
+retain(map: &mut Map, filter: FnPtr) -> Result<Map, Box<EvalAltResult>>
 retain(array: &mut Array, filter: &str) -> Result<Array, Box<EvalAltResult>>
+retain(array: &mut Array, range: Range<i64>) -> Array
 retain(blob: &mut Blob, start: i64, len: i64) -> Blob
 retain(array: &mut Array, start: i64, len: i64) -> Array
 ```
 
-Remove all bytes in the BLOB not within an inclusive `range` and return them as a new BLOB.
+Remove all bytes in the BLOB not within an exclusive `range` and return them as a new BLOB.
 
 #### Example
 
@@ -3104,13 +3083,13 @@ let b1 = blob();
 
 b1 += 1; b1 += 2; b1 += 3; b1 += 4; b1 += 5;
 
-let b2 = b1.retain(1..=3);
+let b2 = b1.retain(1..4);
 
 print(b1);      // prints "[020304]"
 
 print(b2);      // prints "[0105]"
 
-let b3 = b1.retain(1..=2);
+let b3 = b1.retain(1..3);
 
 print(b1);      // prints "[0304]"
 
@@ -3130,24 +3109,20 @@ print(b2);      // prints "[01]"
 <div class='doc-content'>
 
 ```rust,ignore
-reverse(blob: &mut Blob)
 reverse(array: &mut Array)
+reverse(blob: &mut Blob)
 ```
 
-Reverse the BLOB.
+Reverse all the elements in the array.
 
 #### Example
 
 ```rhai
-let b = blob();
+let x = [1, 2, 3, 4, 5];
 
-b += 1; b += 2; b += 3; b += 4; b += 5;
+x.reverse();
 
-print(b);           // prints "[0102030405]"
-
-b.reverse();
-
-print(b);           // prints "[0504030201]"
+print(x);       // prints "[5, 4, 3, 2, 1]"
 ```
 
 </div>
@@ -3182,36 +3157,34 @@ Rounds away from zero.
 <div class='doc-content'>
 
 ```rust,ignore
-set(blob: &mut Blob, index: i64, value: i64)
 set(array: &mut Array, index: i64, value: Dynamic)
 set(string: &mut ImmutableString, index: i64, character: char)
+set(blob: &mut Blob, index: i64, value: i64)
 set(map: &mut Map, property: &str, value: Dynamic)
 ```
 
-Set the particular `index` position in the BLOB to a new byte `value`.
+Set the element at the `index` position in the array to a new `value`.
 
-* If `index` < 0, position counts from the end of the BLOB (`-1` is the last byte).
-* If `index` < -length of BLOB, the BLOB is not modified.
-* If `index` ≥ length of BLOB, the BLOB is not modified.
+* If `index` < 0, position counts from the end of the array (`-1` is the last element).
+* If `index` < -length of array, the array is not modified.
+* If `index` ≥ length of array, the array is not modified.
 
 #### Example
 
 ```rhai
-let b = blob();
+let x = [1, 2, 3];
 
-b += 1; b += 2; b += 3; b += 4; b += 5;
+x.set(0, 42);
 
-b.set(0, 0x42);
+print(x);           // prints "[42, 2, 3]"
 
-print(b);           // prints "[4202030405]"
+x.set(-3, 0);
 
-b.set(-3, 0);
+print(x);           // prints "[0, 2, 3]"
 
-print(b);           // prints "[4202000405]"
+x.set(99, 123);
 
-b.set(99, 123);
-
-print(b);           // prints "[4202000405]"
+print(x);           // prints "[0, 2, 3]"
 ```
 
 </div>
@@ -3324,24 +3297,22 @@ print(x.tag);           // prints 42
 <div class='doc-content'>
 
 ```rust,ignore
-shift(blob: &mut Blob) -> i64
 shift(array: &mut Array) -> Dynamic
+shift(blob: &mut Blob) -> i64
 ```
 
-Remove the first byte from the BLOB and return it.
+Remove the first element from the array and return it.
 
-If the BLOB is empty, zero is returned.
+If the array is empty, `()` is returned.
 
 #### Example
 
 ```rhai
-let b = blob();
+let x = [1, 2, 3];
 
-b += 1; b += 2; b += 3; b += 4; b += 5;
+print(x.shift());   // prints 1
 
-print(b.shift());       // prints 1
-
-print(b);               // prints "[02030405]"
+print(x);           // prints "[2, 3]"
 ```
 
 </div>
@@ -3357,16 +3328,16 @@ print(b);               // prints "[02030405]"
 <div class='doc-content'>
 
 ```rust,ignore
-sign(x: f64) -> Result<i64, Box<EvalAltResult>>
 sign(x: i8) -> i64
-sign(x: f32) -> Result<i64, Box<EvalAltResult>>
-sign(x: i64) -> i64
-sign(x: i128) -> i64
 sign(x: i32) -> i64
+sign(x: f64) -> Result<i64, Box<EvalAltResult>>
 sign(x: i16) -> i64
+sign(x: i64) -> i64
+sign(x: f32) -> Result<i64, Box<EvalAltResult>>
+sign(x: i128) -> i64
 ```
 
-Return the sign (as an integer) of the floating-point number according to the following:
+Return the sign (as an integer) of the number according to the following:
 
 * `0` if the number is zero
 * `1` if the number is positive
@@ -3421,8 +3392,8 @@ Return the hyperbolic sine of the floating-point number in radians.
 <div class='doc-content'>
 
 ```rust,ignore
-sleep(seconds: f64)
 sleep(seconds: i64)
+sleep(seconds: f64)
 ```
 
 Block the current thread for a particular number of `seconds`.
@@ -3431,7 +3402,7 @@ Block the current thread for a particular number of `seconds`.
 
 ```rhai
 // Do nothing for 10 seconds!
-sleep(10.0);
+sleep(10);
 ```
 
 </div>
@@ -3447,21 +3418,19 @@ sleep(10.0);
 <div class='doc-content'>
 
 ```rust,ignore
-some(array: &mut Array, filter: &str) -> Result<bool, Box<EvalAltResult>>
 some(array: &mut Array, filter: FnPtr) -> Result<bool, Box<EvalAltResult>>
+some(array: &mut Array, filter: &str) -> Result<bool, Box<EvalAltResult>>
 ```
 
-Return `true` if any element in the array that returns `true` when applied a function named
-by `filter`.
+Return `true` if any element in the array that returns `true` when applied the `filter` function.
 
-#### Deprecated API
+#### No Function Parameter
 
-This method is deprecated and will be removed from the next major version.
-Use `array.some(Fn("fn_name"))` instead.
+Array element (mutable) is bound to `this`.
+
+This method is marked _pure_; the `filter` function should not mutate array elements.
 
 #### Function Parameters
-
-A function with the same name as the value of `filter` must exist taking these parameters:
 
 * `element`: copy of array element
 * `index` _(optional)_: current index in the array
@@ -3469,19 +3438,13 @@ A function with the same name as the value of `filter` must exist taking these p
 #### Example
 
 ```rhai
-fn large(x) { x > 3 }
-
-fn huge(x) { x > 10 }
-
-fn screen(x, i) { i > x }
-
 let x = [1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 5];
 
-print(x.some("large"));     // prints true
+print(x.some(|v| v > 3));       // prints true
 
-print(x.some("huge"));      // prints false
+print(x.some(|v| v > 10));      // prints false
 
-print(x.some("screen"));    // prints true
+print(x.some(|v, i| i > v));    // prints true
 ```
 
 </div>
@@ -3498,8 +3461,8 @@ print(x.some("screen"));    // prints true
 
 ```rust,ignore
 sort(array: &mut Array) -> Result<(), Box<EvalAltResult>>
-sort(array: &mut Array, comparer: &str) -> Result<(), Box<EvalAltResult>>
 sort(array: &mut Array, comparer: FnPtr)
+sort(array: &mut Array, comparer: &str) -> Result<(), Box<EvalAltResult>>
 ```
 
 Sort the array.
@@ -3539,25 +3502,25 @@ print(x);       // prints "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
 <div class='doc-content'>
 
 ```rust,ignore
-splice(array: &mut Array, range: Range<i64>, replace: Array)
-splice(blob: &mut Blob, range: RangeInclusive<i64>, replace: Blob)
-splice(array: &mut Array, range: RangeInclusive<i64>, replace: Array)
 splice(blob: &mut Blob, range: Range<i64>, replace: Blob)
-splice(array: &mut Array, start: i64, len: i64, replace: Array)
+splice(array: &mut Array, range: Range<i64>, replace: Array)
+splice(array: &mut Array, range: RangeInclusive<i64>, replace: Array)
+splice(blob: &mut Blob, range: RangeInclusive<i64>, replace: Blob)
 splice(blob: &mut Blob, start: i64, len: i64, replace: Blob)
+splice(array: &mut Array, start: i64, len: i64, replace: Array)
 ```
 
-Replace an exclusive range of the array with another array.
+Replace an exclusive `range` of the BLOB with another BLOB.
 
 #### Example
 
 ```rhai
-let x = [1, 2, 3, 4, 5];
-let y = [7, 8, 9, 10];
+let b1 = blob(10, 0x42);
+let b2 = blob(5, 0x18);
 
-x.splice(1..3, y);
+b1.splice(1..4, b2);
 
-print(x);       // prints "[1, 7, 8, 9, 10, 4, 5]"
+print(b1);      // prints "[4218181818184242 42424242]"
 ```
 
 </div>
@@ -3574,13 +3537,13 @@ print(x);       // prints "[1, 7, 8, 9, 10, 4, 5]"
 
 ```rust,ignore
 split(string: &str) -> Array
-split(string: &str, delimiter: &str) -> Array
 split(array: &mut Array, index: i64) -> Array
+split(string: &str, delimiter: &str) -> Array
 split(string: &str, delimiter: char) -> Array
-split(blob: &mut Blob, index: i64) -> Blob
 split(string: &mut ImmutableString, index: i64) -> Array
-split(string: &str, delimiter: char, segments: i64) -> Array
+split(blob: &mut Blob, index: i64) -> Blob
 split(string: &str, delimiter: &str, segments: i64) -> Array
+split(string: &str, delimiter: char, segments: i64) -> Array
 ```
 
 Split the string into segments based on whitespaces, returning an array of the segments.
@@ -3701,20 +3664,20 @@ print(text.starts_with("world"));   // prints false
 <div class='doc-content'>
 
 ```rust,ignore
-sub_string(string: &str, range: Range<i64>) -> ImmutableString
 sub_string(string: &str, range: RangeInclusive<i64>) -> ImmutableString
 sub_string(string: &str, start: i64) -> ImmutableString
+sub_string(string: &str, range: Range<i64>) -> ImmutableString
 sub_string(string: &str, start: i64, len: i64) -> ImmutableString
 ```
 
-Copy an exclusive range of characters from the string and return it as a new string.
+Copy an inclusive range of characters from the string and return it as a new string.
 
 #### Example
 
 ```rhai
 let text = "hello, world!";
 
-print(text.sub_string(3..7));   // prints "lo, "
+print(text.sub_string(3..=7));  // prints "lo, w"
 ```
 
 </div>
@@ -3881,16 +3844,16 @@ print(x);       // prints "[66, 66, 66, 66, 66]"
 <div class='doc-content'>
 
 ```rust,ignore
-to_binary(value: u32) -> ImmutableString
-to_binary(value: i32) -> ImmutableString
-to_binary(value: u128) -> ImmutableString
-to_binary(value: u16) -> ImmutableString
 to_binary(value: i128) -> ImmutableString
+to_binary(value: i64) -> ImmutableString
+to_binary(value: u128) -> ImmutableString
 to_binary(value: i16) -> ImmutableString
 to_binary(value: u8) -> ImmutableString
-to_binary(value: i8) -> ImmutableString
+to_binary(value: i32) -> ImmutableString
+to_binary(value: u32) -> ImmutableString
 to_binary(value: u64) -> ImmutableString
-to_binary(value: i64) -> ImmutableString
+to_binary(value: u16) -> ImmutableString
+to_binary(value: i8) -> ImmutableString
 ```
 
 Convert the `value` into a string in binary format.
@@ -3962,19 +3925,19 @@ print(text.to_chars());     // prints "['h', 'e', 'l', 'l', 'o']"
 <div class='doc-content'>
 
 ```rust,ignore
-to_debug(number: f32) -> ImmutableString
-to_debug(item: &mut Dynamic) -> ImmutableString
-to_debug(map: &mut Map) -> ImmutableString
 to_debug(f: &mut FnPtr) -> ImmutableString
-to_debug(string: &str) -> ImmutableString
-to_debug(number: f64) -> ImmutableString
+to_debug(number: f32) -> ImmutableString
 to_debug(array: &mut Array) -> ImmutableString
-to_debug(character: char) -> ImmutableString
+to_debug(map: &mut Map) -> ImmutableString
+to_debug(string: &str) -> ImmutableString
+to_debug(item: &mut Dynamic) -> ImmutableString
 to_debug(unit: ()) -> ImmutableString
+to_debug(character: char) -> ImmutableString
+to_debug(number: f64) -> ImmutableString
 to_debug(value: bool) -> ImmutableString
 ```
 
-Convert the value of `number` into a string.
+Convert the function pointer into a string in debug format.
 
 </div>
 </div>
@@ -4010,14 +3973,14 @@ Convert radians to degrees.
 to_float(_)
 to_float(_)
 to_float(_)
-to_float(_)
-to_float(_)
-to_float(_)
-to_float(_)
-to_float(_)
-to_float(_)
-to_float(_)
 to_float(x: f32) -> f64
+to_float(_)
+to_float(_)
+to_float(_)
+to_float(_)
+to_float(_)
+to_float(_)
+to_float(_)
 to_float(_)
 ```
 
@@ -4036,16 +3999,16 @@ Convert the 32-bit floating-point number to 64-bit.
 <div class='doc-content'>
 
 ```rust,ignore
-to_hex(value: i16) -> ImmutableString
-to_hex(value: i128) -> ImmutableString
+to_hex(value: i8) -> ImmutableString
 to_hex(value: u16) -> ImmutableString
-to_hex(value: u128) -> ImmutableString
+to_hex(value: u64) -> ImmutableString
 to_hex(value: u32) -> ImmutableString
 to_hex(value: i32) -> ImmutableString
-to_hex(value: i64) -> ImmutableString
-to_hex(value: u64) -> ImmutableString
-to_hex(value: i8) -> ImmutableString
 to_hex(value: u8) -> ImmutableString
+to_hex(value: i16) -> ImmutableString
+to_hex(value: i128) -> ImmutableString
+to_hex(value: u128) -> ImmutableString
+to_hex(value: i64) -> ImmutableString
 ```
 
 Convert the `value` into a string in hex format.
@@ -4065,7 +4028,8 @@ Convert the `value` into a string in hex format.
 ```rust,ignore
 to_int(_)
 to_int(_)
-to_int(x: f32) -> Result<i64, Box<EvalAltResult>>
+to_int(_)
+to_int(_)
 to_int(x: f64) -> Result<i64, Box<EvalAltResult>>
 to_int(_)
 to_int(_)
@@ -4073,8 +4037,7 @@ to_int(_)
 to_int(_)
 to_int(_)
 to_int(_)
-to_int(_)
-to_int(_)
+to_int(x: f32) -> Result<i64, Box<EvalAltResult>>
 to_int(_)
 ```
 
@@ -4129,20 +4092,20 @@ print(m.to_json());     // prints {"a":1, "b":2, "c":3}
 <div class='doc-content'>
 
 ```rust,ignore
-to_lower(character: char) -> char
 to_lower(string: ImmutableString) -> ImmutableString
+to_lower(character: char) -> char
 ```
 
-Convert the character to lower-case and return it as a new character.
+Convert the string to all lower-case and return it as a new string.
 
 #### Example
 
 ```rhai
-let ch = 'A';
+let text = "HELLO, WORLD!"
 
-print(ch.to_lower());       // prints 'a'
+print(text.to_lower());     // prints "hello, world!"
 
-print(ch);                  // prints 'A'
+print(text);                // prints "HELLO, WORLD!"
 ```
 
 </div>
@@ -4158,16 +4121,16 @@ print(ch);                  // prints 'A'
 <div class='doc-content'>
 
 ```rust,ignore
-to_octal(value: i64) -> ImmutableString
-to_octal(value: u64) -> ImmutableString
-to_octal(value: u8) -> ImmutableString
-to_octal(value: i8) -> ImmutableString
-to_octal(value: i16) -> ImmutableString
-to_octal(value: u16) -> ImmutableString
-to_octal(value: i128) -> ImmutableString
-to_octal(value: u128) -> ImmutableString
 to_octal(value: i32) -> ImmutableString
 to_octal(value: u32) -> ImmutableString
+to_octal(value: u64) -> ImmutableString
+to_octal(value: i8) -> ImmutableString
+to_octal(value: u16) -> ImmutableString
+to_octal(value: i64) -> ImmutableString
+to_octal(value: u128) -> ImmutableString
+to_octal(value: i128) -> ImmutableString
+to_octal(value: i16) -> ImmutableString
+to_octal(value: u8) -> ImmutableString
 ```
 
 Convert the `value` into a string in octal format.
@@ -4203,18 +4166,18 @@ Convert degrees to radians.
 <div class='doc-content'>
 
 ```rust,ignore
-to_string(map: &mut Map) -> ImmutableString
-to_string(item: &mut Dynamic) -> ImmutableString
 to_string(number: f32) -> ImmutableString
 to_string(array: &mut Array) -> ImmutableString
-to_string(string: ImmutableString) -> ImmutableString
+to_string(map: &mut Map) -> ImmutableString
 to_string(number: f64) -> ImmutableString
+to_string(value: bool) -> ImmutableString
+to_string(string: ImmutableString) -> ImmutableString
+to_string(item: &mut Dynamic) -> ImmutableString
 to_string(unit: ()) -> ImmutableString
 to_string(character: char) -> ImmutableString
-to_string(value: bool) -> ImmutableString
 ```
 
-Convert the object map into a string.
+Convert the value of `number` into a string.
 
 </div>
 </div>
@@ -4349,12 +4312,12 @@ print(m.values());      // prints "[1, 2, 3]""
 <div class='doc-content'>
 
 ```rust,ignore
-write_ascii(blob: &mut Blob, range: RangeInclusive<i64>, string: &str)
 write_ascii(blob: &mut Blob, range: Range<i64>, string: &str)
+write_ascii(blob: &mut Blob, range: RangeInclusive<i64>, string: &str)
 write_ascii(blob: &mut Blob, start: i64, len: i64, string: &str)
 ```
 
-Write an ASCII string to the bytes within an inclusive `range` in the BLOB.
+Write an ASCII string to the bytes within an exclusive `range` in the BLOB.
 
 Each ASCII character encodes to one single byte in the BLOB.
 Non-ASCII characters are ignored.
@@ -4365,9 +4328,9 @@ Non-ASCII characters are ignored.
 ```rhai
 let b = blob(8);
 
-b.write_ascii(1..=5, "hello, world!");
+b.write_ascii(1..5, "hello, world!");
 
-print(b);       // prints "[0068656c6c6f0000]"
+print(b);       // prints "[0068656c6c000000]"
 ```
 
 </div>
@@ -4383,27 +4346,19 @@ print(b);       // prints "[0068656c6c6f0000]"
 <div class='doc-content'>
 
 ```rust,ignore
-write_be(blob: &mut Blob, range: RangeInclusive<i64>, value: i64)
-write_be(blob: &mut Blob, range: Range<i64>, value: f64)
 write_be(blob: &mut Blob, range: RangeInclusive<i64>, value: f64)
 write_be(blob: &mut Blob, range: Range<i64>, value: i64)
-write_be(blob: &mut Blob, start: i64, len: i64, value: f64)
+write_be(blob: &mut Blob, range: RangeInclusive<i64>, value: i64)
+write_be(blob: &mut Blob, range: Range<i64>, value: f64)
 write_be(blob: &mut Blob, start: i64, len: i64, value: i64)
+write_be(blob: &mut Blob, start: i64, len: i64, value: f64)
 ```
 
-Write an `INT` value to the bytes within an inclusive `range` in the BLOB
+Write a `FLOAT` value to the bytes within an inclusive `range` in the BLOB
 in big-endian byte order.
 
-* If number of bytes in `range` < number of bytes for `INT`, extra bytes in `INT` are not written.
-* If number of bytes in `range` > number of bytes for `INT`, extra bytes in `range` are not modified.
-
-```rhai
-let b = blob(8, 0x42);
-
-b.write_be_int(1..=3, 0x99);
-
-print(b);       // prints "[4200000042424242]"
-```
+* If number of bytes in `range` < number of bytes for `FLOAT`, extra bytes in `FLOAT` are not written.
+* If number of bytes in `range` > number of bytes for `FLOAT`, extra bytes in `range` are not modified.
 
 </div>
 </div>
@@ -4419,9 +4374,9 @@ print(b);       // prints "[4200000042424242]"
 
 ```rust,ignore
 write_le(blob: &mut Blob, range: RangeInclusive<i64>, value: f64)
-write_le(blob: &mut Blob, range: Range<i64>, value: f64)
-write_le(blob: &mut Blob, range: RangeInclusive<i64>, value: i64)
 write_le(blob: &mut Blob, range: Range<i64>, value: i64)
+write_le(blob: &mut Blob, range: RangeInclusive<i64>, value: i64)
+write_le(blob: &mut Blob, range: Range<i64>, value: f64)
 write_le(blob: &mut Blob, start: i64, len: i64, value: i64)
 write_le(blob: &mut Blob, start: i64, len: i64, value: f64)
 ```
@@ -4445,12 +4400,12 @@ in little-endian byte order.
 <div class='doc-content'>
 
 ```rust,ignore
-write_utf8(blob: &mut Blob, range: Range<i64>, string: &str)
 write_utf8(blob: &mut Blob, range: RangeInclusive<i64>, string: &str)
+write_utf8(blob: &mut Blob, range: Range<i64>, string: &str)
 write_utf8(blob: &mut Blob, start: i64, len: i64, string: &str)
 ```
 
-Write a string to the bytes within an exclusive `range` in the BLOB in UTF-8 encoding.
+Write a string to the bytes within an inclusive `range` in the BLOB in UTF-8 encoding.
 
 * If number of bytes in `range` < length of `string`, extra bytes in `string` are not written.
 * If number of bytes in `range` > length of `string`, extra bytes in `range` are not modified.
@@ -4458,9 +4413,9 @@ Write a string to the bytes within an exclusive `range` in the BLOB in UTF-8 enc
 ```rhai
 let b = blob(8);
 
-b.write_utf8(1..5, "朝には紅顔ありて夕べには白骨となる");
+b.write_utf8(1..=5, "朝には紅顔ありて夕べには白骨となる");
 
-print(b);       // prints "[00e69c9de3000000]"
+print(b);       // prints "[00e69c9de3810000]"
 ```
 
 </div>
